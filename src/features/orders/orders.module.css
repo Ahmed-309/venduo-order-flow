@@ -1,0 +1,73 @@
+.list {
+  padding: 0;
+  overflow: hidden;
+}
+
+.list > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-height: 64px;
+  padding: 12px 20px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.row:hover {
+  background: var(--color-hover);
+}
+
+.row:focus-visible {
+  outline-offset: -2px;
+}
+
+.thumbnail {
+  flex: none;
+  width: 48px;
+  height: 64px;
+  border-radius: var(--radius-chip);
+  object-fit: contain;
+}
+
+.rowMain {
+  flex: 1 1 180px;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.rowTitle {
+  font-weight: 600;
+}
+
+.rowEnd {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+@media (min-width: 768px) {
+  .rowEnd {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+}
+
+.skeletonRow {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 20px;
+}
+
+.skeletonRow + .skeletonRow {
+  border-top: 1px solid var(--color-border);
+}
