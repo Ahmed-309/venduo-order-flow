@@ -20,7 +20,7 @@ To see every state, open **Demo** in the header. It loads empty, partial or popu
 | `npm run test:e2e` | Browser tests at 1280px and 390px, against a production build |
 | `npm run verify` | Typecheck, lint, unit tests, build, browser tests |
 
-Before the first browser test run: `npx playwright build` is not needed, but `npx playwright install chromium` is. Run `npm run build` first if you call `test:e2e` on its own.
+Before the first browser test run, install the browser with `npx playwright install chromium`. If you call `test:e2e` on its own, run `npm run build` first.
 
 ## Structure, and why
 
