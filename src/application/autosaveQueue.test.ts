@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AutosaveQueue, type SaveStatus } from './autosaveQueue';
 
-function setup(persist = vi.fn(async (_value: string) => {})) {
+const succeeding = () => vi.fn<(value: string) => Promise<void>>().mockResolvedValue(undefined);
+
+function setup(persist = succeeding()) {
   const statuses: SaveStatus[] = [];
   const queue = new AutosaveQueue<string>(persist, (status) => statuses.push(status), 400);
   return { queue, persist, statuses };
@@ -59,7 +61,7 @@ describe('AutosaveQueue', () => {
   });
 
   it('keeps a failed edit, reports it, and writes it on retry', async () => {
-    const persist = vi.fn(async (_value: string) => {}).mockRejectedValueOnce(new Error('disk full'));
+    const persist = succeeding().mockRejectedValueOnce(new Error('disk full'));
     const { queue, statuses } = setup(persist);
 
     queue.push('precious', { debounce: false });
