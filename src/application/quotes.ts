@@ -69,7 +69,10 @@ export async function loadQuoteWizard(env: WorkflowEnv, preselectPackId: string 
     draft = selectPack(draft, preselected, catalogue);
   }
 
-  if (!saved || draft !== saved) await env.repository.saveQuoteDraft(draft);
+  // With nothing ticked, the later steps have nothing to work on.
+  if (draft.selectedPackIds.length === 0) draft = { ...draft, step: 'products' };
+
+  if (JSON.stringify(draft) !== JSON.stringify(saved)) await env.repository.saveQuoteDraft(draft);
   return { catalogue, packs, draft };
 }
 

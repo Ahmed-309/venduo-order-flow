@@ -1,0 +1,124 @@
+.stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+}
+
+.step[aria-current='step'] {
+  color: var(--color-primary-strong);
+  font-weight: 600;
+}
+
+.stepNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+}
+
+.productRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  cursor: pointer;
+}
+
+.productRow:hover {
+  background: var(--color-hover);
+}
+
+.productRow:has(input:checked) {
+  border-color: var(--color-primary);
+}
+
+.productDisabled {
+  cursor: not-allowed;
+}
+
+.productDisabled:hover {
+  background: var(--color-surface);
+}
+
+.checkbox {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-primary-strong);
+}
+
+.thumbnail {
+  flex: none;
+  width: 48px;
+  height: 64px;
+  border-radius: var(--radius-chip);
+  object-fit: contain;
+}
+
+.productName {
+  font-weight: 600;
+}
+
+.detailCard {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .detailCard {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 24px;
+  }
+}
+
+.detailHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.liveEstimate {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius-control);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.sentItem {
+  display: flex;
+  gap: 12px;
+}
+
+.total {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+}
+
+.nextSteps {
+  display: grid;
+  gap: 4px;
+  padding-left: 20px;
+  list-style: decimal;
+}

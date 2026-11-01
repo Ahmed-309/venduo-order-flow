@@ -5,7 +5,7 @@ import { completeHoodie, completeTShirt, emptyPack } from '@/domain/testing/buil
 import type { TechPack } from '@/domain/techPack';
 import { MemoryRepository } from '@/infrastructure/memoryRepository';
 import { withFaults, NO_FAULTS, type FaultSettings } from '@/infrastructure/faultInjectingRepository';
-import { loadQuoteWizard, submitQuote, togglePack } from './quotes';
+import { loadQuoteWizard, saveQuoteDraft, submitQuote, togglePack } from './quotes';
 import { saveTechPack, type WorkflowEnv } from './techPacks';
 
 const delivery = { recipientName: 'Salma', mobile: '01012345678', governorate: 'Giza', city: 'Dokki', street: '' };
@@ -64,6 +64,23 @@ describe('loadQuoteWizard', () => {
     await saveTechPack(env, { ...pack, name: '' });
     const { draft } = await loadQuoteWizard(env, null);
     expect(draft.selectedPackIds).toEqual([]);
+  });
+
+  it('returns to the first step when nothing is left ticked', async () => {
+    const { env, memory } = setup();
+    const pack = await addPack(env, memory, completeTShirt());
+    const { draft } = await loadQuoteWizard(env, pack.id);
+    await saveQuoteDraft(env, { ...draft, step: 'delivery' });
+    await saveTechPack(env, { ...pack, name: '' });
+    expect((await loadQuoteWizard(env, null)).draft.step).toBe('products');
+  });
+
+  it('can restore a saved draft while saving is failing', async () => {
+    const { env, memory, setFaults } = setup();
+    const pack = await addPack(env, memory, completeTShirt());
+    await loadQuoteWizard(env, pack.id);
+    setFaults({ failWrites: true });
+    await expect(loadQuoteWizard(env, null)).resolves.toBeDefined();
   });
 
   it('keeps quantity and comment when a pack is unticked and ticked again', async () => {
