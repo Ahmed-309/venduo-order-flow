@@ -3,6 +3,7 @@ import type { Catalogue, Category } from './catalogue/types';
 import { evaluateReadiness } from './readiness';
 import { catalogue, completeHoodie, completeTShirt, emptyPack, withBodyFabric, withDetails, withFit } from './testing/builders';
 import { addTrim, removeTrim } from './hub';
+import { estimatePrice } from './pricing';
 
 const state = (pack: ReturnType<typeof emptyPack>, section: string, data: Catalogue = catalogue) =>
   evaluateReadiness(pack, data).sections.find((candidate) => candidate.id === section)?.state;
@@ -79,6 +80,7 @@ describe('evaluateReadiness', () => {
     expect(evaluateReadiness(pack, data).blockers.map((blocker) => blocker.text)).toEqual(['Add a zip. A skirt needs one.']);
     const withZip = { ...pack, trims: [{ trimId: 'nylon-zip', colour: 'Black' }] };
     expect(evaluateReadiness(withZip, data).canRequestQuote).toBe(true);
+    expect(estimatePrice(withZip, 300, data).unit.low).toBeGreaterThan(0);
   });
 });
 
