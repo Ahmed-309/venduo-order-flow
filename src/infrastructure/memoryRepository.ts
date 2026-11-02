@@ -1,4 +1,4 @@
-import { FrozenPackError, type TechPackRepository } from '@/application/repository';
+import { FrozenPackError, type TechPackRepository, type UnsavedChange } from '@/application/repository';
 import { seedCatalogue } from '@/domain/catalogue/seed';
 import type { QuoteDraft, QuoteRequest } from '@/domain/quote';
 import type { TechPack } from '@/domain/techPack';
@@ -16,6 +16,18 @@ export class MemoryRepository implements TechPackRepository {
   private quoteDraft: QuoteDraft | null = null;
   private packSequence = 0;
   private requestSequence = 0;
+
+  /** Nothing here outlives the page, so the edit applies at once under the same rules. */
+  stashUnsaved(change: UnsavedChange) {
+    if (change.kind === 'pack') {
+      const current = this.packs.get(change.pack.id);
+      if (current?.status === 'draft' && current.updatedAt < change.pack.updatedAt) {
+        this.packs.set(change.pack.id, copy(change.pack));
+      }
+    } else if (this.quoteDraft && (this.quoteDraft.savedAt ?? '') < (change.draft.savedAt ?? '')) {
+      this.quoteDraft = copy(change.draft);
+    }
+  }
 
   async loadCatalogue() {
     return seedCatalogue;

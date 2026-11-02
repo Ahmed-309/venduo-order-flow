@@ -80,6 +80,10 @@ export function saveQuoteDraft(env: WorkflowEnv, draft: QuoteDraft): Promise<voi
   return env.repository.saveQuoteDraft({ ...draft, savedAt: env.now() });
 }
 
+export function stashQuoteDraft(env: WorkflowEnv, draft: QuoteDraft): void {
+  env.repository.stashUnsaved({ kind: 'quote_draft', draft: { ...draft, savedAt: env.now() } });
+}
+
 export type SubmitResult =
   | { kind: 'submitted'; request: QuoteRequest }
   | { kind: 'invalid'; errors: string[] };

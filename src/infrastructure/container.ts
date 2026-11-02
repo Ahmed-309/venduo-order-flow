@@ -15,7 +15,7 @@ export function writeFaultSettings(settings: FaultSettings): void {
   localStorage.setItem(FAULTS_KEY, JSON.stringify(settings));
 }
 
-const storage = new IndexedDbRepository(() => indexedDB, DATABASE_NAME);
+const storage = new IndexedDbRepository(() => indexedDB, DATABASE_NAME, () => localStorage);
 
 /** The one place that chooses a storage implementation. Swap it here to replace IndexedDB. */
 export const workflowEnv: WorkflowEnv = {

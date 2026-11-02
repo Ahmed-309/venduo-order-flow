@@ -11,19 +11,24 @@ export interface Autosave<T> {
   flush: () => Promise<boolean>;
 }
 
-/** `persist` is captured once, so it should only close over values that do not change. */
-export function useAutosave<T>(persist: (value: T) => Promise<void>): Autosave<T> {
+/** `persist` and `stash` are captured once, so they should only close over values that do not change. */
+export function useAutosave<T>(persist: (value: T) => Promise<void>, stash: (value: T) => void): Autosave<T> {
+  const [stashOnLeave] = useState(() => stash);
   const [status, setStatus] = useState<SaveStatus>('idle');
   const [queue] = useState(() => new AutosaveQueue<T>(persist, setStatus, TEXT_DEBOUNCE_MS));
 
   useEffect(() => {
     const flush = () => void queue.flush();
-    window.addEventListener('pagehide', flush);
-    return () => {
-      window.removeEventListener('pagehide', flush);
+    const leave = () => {
+      if (queue.unsaved !== null) stashOnLeave(queue.unsaved);
       flush();
     };
-  }, [queue]);
+    window.addEventListener('pagehide', leave);
+    return () => {
+      window.removeEventListener('pagehide', leave);
+      flush();
+    };
+  }, [queue, stashOnLeave]);
 
   // Warn before closing the tab while a failed edit exists only in memory.
   useEffect(() => {

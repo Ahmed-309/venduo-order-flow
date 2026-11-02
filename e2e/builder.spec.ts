@@ -5,6 +5,7 @@ import {
   closeRail,
   fillDetails,
   isPhone,
+  loadFixture,
   openRail,
   openSection,
   pickFit,
@@ -309,4 +310,25 @@ test('a quote cannot start on an unsaved change, and the rail says so', async ({
   await rail.getByRole('button', { name: 'Request a quote' }).click();
   await page.waitForURL(/\/quote/);
   await expect(page.getByRole('checkbox', { name: /Renamed/ })).toBeChecked();
+});
+
+for (const pause of [0, 100]) {
+  test(`text typed ${pause}ms before a reload is not lost`, async ({ page }) => {
+    await startDraft(page, 'T-shirt');
+    await page.getByLabel('Name').fill('Typed just before reload');
+    if (pause > 0) await page.waitForTimeout(pause);
+    await page.reload();
+    await expect(page.getByLabel('Name')).toHaveValue('Typed just before reload');
+  });
+}
+
+test('a quote draft typed just before a reload is not lost', async ({ page }) => {
+  await loadFixture(page, 'Populated');
+  await expect(page.getByRole('link', { name: /Everyday tee/ })).toBeVisible();
+  await page.goto('/quote');
+  await page.getByRole('checkbox', { name: /Everyday tee/ }).check();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByLabel(/Comment/).fill('Typed just before reload');
+  await page.reload();
+  await expect(page.getByLabel(/Comment/)).toHaveValue('Typed just before reload');
 });

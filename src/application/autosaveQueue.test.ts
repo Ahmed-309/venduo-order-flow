@@ -24,6 +24,20 @@ describe('AutosaveQueue', () => {
     expect(persist.mock.calls).toEqual([['ab']]);
   });
 
+  it('reports an unsaved value until storage confirms it, and keeps it if the write fails', async () => {
+    const { queue } = setup();
+    expect(queue.unsaved).toBeNull();
+    queue.push('typed', { debounce: true });
+    expect(queue.unsaved).toBe('typed');
+    await queue.flush();
+    expect(queue.unsaved).toBeNull();
+
+    const failing = setup(vi.fn<(value: string) => Promise<void>>().mockRejectedValue(new Error('nope')));
+    failing.queue.push('kept', { debounce: false });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(failing.queue.unsaved).toBe('kept');
+  });
+
   it('saves picks straight away', async () => {
     const { queue, persist, statuses } = setup();
     queue.push('picked', { debounce: false });

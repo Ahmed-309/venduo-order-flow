@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
-import { loadBuilder, saveTechPack } from '@/application/techPacks';
+import { loadBuilder, saveTechPack, stashTechPack } from '@/application/techPacks';
 import { findCategory, type Catalogue } from '@/domain/catalogue/types';
 import { estimatePrice } from '@/domain/pricing';
 import { evaluateReadiness } from '@/domain/readiness';
@@ -69,7 +69,10 @@ function Builder({ initialPack, catalogue }: { initialPack: TechPack; catalogue:
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
-  const autosave = useAutosave<TechPack>((next) => saveTechPack(env, next));
+  const autosave = useAutosave<TechPack>(
+    (next) => saveTechPack(env, next),
+    (next) => stashTechPack(env, next),
+  );
   useNavigationGuard(autosave.flush);
 
   const readiness = useMemo(() => evaluateReadiness(pack, catalogue), [pack, catalogue]);

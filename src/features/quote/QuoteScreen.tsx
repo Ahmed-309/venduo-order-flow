@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { loadQuoteWizard, saveQuoteDraft, submitQuote, togglePack, type QuoteWizardData } from '@/application/quotes';
+import { loadQuoteWizard, saveQuoteDraft, stashQuoteDraft, submitQuote, togglePack, type QuoteWizardData } from '@/application/quotes';
 import { findCategory } from '@/domain/catalogue/types';
 import { formatEgpRange } from '@/domain/money';
 import { effectiveMoq } from '@/domain/moq';
@@ -63,7 +63,10 @@ function Wizard({ data }: { data: QuoteWizardData }) {
   const [sendErrors, setSendErrors] = useState<string[]>([]);
   const [sendFailed, setSendFailed] = useState(false);
 
-  const autosave = useAutosave<QuoteDraft>((next) => saveQuoteDraft(env, next));
+  const autosave = useAutosave<QuoteDraft>(
+    (next) => saveQuoteDraft(env, next),
+    (next) => stashQuoteDraft(env, next),
+  );
   useNavigationGuard(autosave.flush);
 
   // ?pack= has done its job once the draft holds the selection. Left in the URL, a reload

@@ -28,6 +28,11 @@ export class AutosaveQueue<T> {
     }
   }
 
+  /** The latest value storage has not confirmed, if any. */
+  get unsaved(): T | null {
+    return this.pending ? this.pending.value : null;
+  }
+
   /** Writes anything outstanding. Resolves true once storage holds the latest value. */
   async flush(): Promise<boolean> {
     this.clearTimer();

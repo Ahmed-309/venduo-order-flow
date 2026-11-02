@@ -8,9 +8,21 @@ import type { TechPack } from '@/domain/techPack';
 import { IndexedDbRepository } from './indexedDbRepository';
 import { MemoryRepository } from './memoryRepository';
 
+function createJournal() {
+  const items = new Map<string, string>();
+  return {
+    getItem: (key: string) => items.get(key) ?? null,
+    setItem: (key: string, value: string) => void items.set(key, value),
+    removeItem: (key: string) => void items.delete(key),
+  };
+}
+
+const unusedJournal = createJournal();
+const fakeJournal = () => unusedJournal;
+
 const implementations: [string, () => TechPackRepository][] = [
   ['MemoryRepository', () => new MemoryRepository()],
-  ['IndexedDbRepository', () => new IndexedDbRepository(() => new IDBFactory(), 'test')],
+  ['IndexedDbRepository', () => new IndexedDbRepository(() => new IDBFactory(), 'test', fakeJournal)],
 ];
 
 describe.each(implementations)('%s', (_name, create) => {
@@ -134,5 +146,83 @@ describe.each(implementations)('%s', (_name, create) => {
     await repository.commitQuoteRequest('submission', requestFor([pack], 'submission'));
     await expect(repository.updatePack({ ...pack, name: 'Too late' })).rejects.toBeInstanceOf(FrozenPackError);
     expect((await repository.getPack(pack.id))?.name).toBe('');
+  });
+});
+
+/** A second page load is a new repository over the same database and journal. */
+const stashImplementations: [string, () => { first: TechPackRepository; reopen: () => TechPackRepository }][] = [
+  [
+    'MemoryRepository',
+    () => {
+      const repository = new MemoryRepository();
+      return { first: repository, reopen: () => repository };
+    },
+  ],
+  [
+    'IndexedDbRepository',
+    () => {
+      const factory = new IDBFactory();
+      const journal = createJournal();
+      const open = () => new IndexedDbRepository(() => factory, 'test', () => journal);
+      return { first: open(), reopen: open };
+    },
+  ],
+];
+
+describe.each(stashImplementations)('%s: edits stashed during unload', (_name, create) => {
+  const later = '2026-11-01T12:00:00.000Z';
+
+  async function setup() {
+    const { first, reopen } = create();
+    const env: WorkflowEnv = { repository: first, newId: () => 'pack', now: () => '2026-11-01T10:00:00.000Z' };
+    return { first, reopen, pack: await createDraft(env, seedCatalogue, 't-shirt') };
+  }
+
+  it('applies the edit on the next load', async () => {
+    const { first, reopen, pack } = await setup();
+    first.stashUnsaved({ kind: 'pack', pack: { ...pack, name: 'Typed', updatedAt: later } });
+    expect((await reopen().getPack(pack.id))?.name).toBe('Typed');
+  });
+
+  it('does not let an older edit replace a newer save', async () => {
+    const { first, reopen, pack } = await setup();
+    await first.updatePack({ ...pack, name: 'Newer', updatedAt: later });
+    first.stashUnsaved({ kind: 'pack', pack: { ...pack, name: 'Older' } });
+    expect((await reopen().getPack(pack.id))?.name).toBe('Newer');
+  });
+
+  it('never changes a pack that has been sent', async () => {
+    const { first, reopen, pack } = await setup();
+    await first.commitQuoteRequest('sent', () => ({
+      id: 'request',
+      reference: formatRequestReference(1),
+      submissionId: 'sent',
+      status: 'quote_requested',
+      items: [
+        {
+          pack: { ...pack, status: 'quote_requested' },
+          quantity: 300,
+          comment: '',
+          estimate: {} as QuoteRequest['items'][number]['estimate'],
+        },
+      ],
+      delivery: createQuoteDraft('x').delivery,
+      submittedAt: later,
+    }));
+    first.stashUnsaved({ kind: 'pack', pack: { ...pack, name: 'Too late', updatedAt: later } });
+    expect((await reopen().getPack(pack.id))?.name).toBe('');
+  });
+
+  it('restores a quote draft edit, but does not bring back a cleared draft', async () => {
+    const { first, reopen } = await setup();
+    const draft = createQuoteDraft('submission');
+    await first.saveQuoteDraft(draft);
+    first.stashUnsaved({ kind: 'quote_draft', draft: { ...draft, step: 'delivery', savedAt: later } });
+    const second = reopen();
+    expect((await second.loadQuoteDraft())?.step).toBe('delivery');
+
+    await second.clearQuoteDraft();
+    second.stashUnsaved({ kind: 'quote_draft', draft: { ...draft, savedAt: later } });
+    expect(await reopen().loadQuoteDraft()).toBeNull();
   });
 });

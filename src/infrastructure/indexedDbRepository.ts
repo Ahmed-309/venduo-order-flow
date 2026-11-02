@@ -1,4 +1,4 @@
-import { FrozenPackError, type TechPackRepository } from '@/application/repository';
+import { FrozenPackError, type TechPackRepository, type UnsavedChange } from '@/application/repository';
 import { seedCatalogue } from '@/domain/catalogue/seed';
 import type { QuoteDraft, QuoteRequest } from '@/domain/quote';
 import type { TechPack } from '@/domain/techPack';
@@ -13,6 +13,7 @@ const ALL_STORES = [PACKS, REQUESTS, ASSETS, QUOTE_DRAFT, COUNTERS];
 
 const QUOTE_DRAFT_KEY = 'current';
 const SUBMISSION_INDEX = 'submissionId';
+const UNSAVED_KEY = 'venduo.unsaved';
 
 function toPromise<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -42,7 +43,42 @@ export class IndexedDbRepository implements TechPackRepository {
   constructor(
     private readonly factory: () => IDBFactory,
     private readonly name: string,
+    private readonly journal: () => Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>,
   ) {}
+
+  /**
+   * IndexedDB cannot finish a read-then-write during unload, because the page never hears the read
+   * back. localStorage is synchronous, so the edit waits there until the next open applies it.
+   */
+  stashUnsaved(change: UnsavedChange) {
+    try {
+      const stashed = JSON.parse(this.journal().getItem(UNSAVED_KEY) ?? '[]') as UnsavedChange[];
+      this.journal().setItem(UNSAVED_KEY, JSON.stringify([...stashed, change]));
+    } catch {
+      // The normal save is still running; this is only its safety net.
+    }
+  }
+
+  private async applyUnsaved(db: IDBDatabase): Promise<void> {
+    const stored = this.journal().getItem(UNSAVED_KEY);
+    if (!stored) return;
+
+    const transaction = db.transaction([PACKS, QUOTE_DRAFT], 'readwrite');
+    const done = completion(transaction);
+    const packs = transaction.objectStore(PACKS);
+    const drafts = transaction.objectStore(QUOTE_DRAFT);
+    for (const change of JSON.parse(stored) as UnsavedChange[]) {
+      if (change.kind === 'pack') {
+        const current = (await toPromise(packs.get(change.pack.id))) as TechPack | undefined;
+        if (current?.status === 'draft' && current.updatedAt < change.pack.updatedAt) packs.put(change.pack);
+      } else {
+        const current = (await toPromise(drafts.get(QUOTE_DRAFT_KEY))) as QuoteDraft | undefined;
+        if (current && (current.savedAt ?? '') < (change.draft.savedAt ?? '')) drafts.put(change.draft, QUOTE_DRAFT_KEY);
+      }
+    }
+    await done;
+    this.journal().removeItem(UNSAVED_KEY);
+  }
 
   /** Opened on first use, because this module is also imported during server rendering. */
   private open(): Promise<IDBDatabase> {
@@ -61,10 +97,15 @@ export class IndexedDbRepository implements TechPackRepository {
         };
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
-      }).catch((error) => {
-        this.database = null;
-        throw error;
-      });
+      })
+        .then(async (db) => {
+          await this.applyUnsaved(db).catch(() => undefined);
+          return db;
+        })
+        .catch((error) => {
+          this.database = null;
+          throw error;
+        });
     }
     return this.database;
   }

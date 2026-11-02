@@ -23,6 +23,10 @@ export function saveTechPack(env: WorkflowEnv, pack: TechPack): Promise<void> {
   return env.repository.updatePack({ ...pack, updatedAt: env.now() });
 }
 
+export function stashTechPack(env: WorkflowEnv, pack: TechPack): void {
+  env.repository.stashUnsaved({ kind: 'pack', pack: { ...pack, updatedAt: env.now() } });
+}
+
 export interface BuilderData {
   catalogue: Catalogue;
   pack: TechPack | null;

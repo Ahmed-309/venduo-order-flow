@@ -36,6 +36,7 @@ export function withFaults(inner: TechPackRepository, getSettings: () => FaultSe
   }
 
   return {
+    stashUnsaved: (change) => inner.stashUnsaved(change),
     loadCatalogue: () => read(() => inner.loadCatalogue()),
     createPack: (build) => write(() => inner.createPack(build)),
     getPack: (id) => read(() => inner.getPack(id)),
