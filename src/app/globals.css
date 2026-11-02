@@ -375,6 +375,13 @@ textarea.input {
   accent-color: var(--color-primary-strong);
 }
 
+/* A link in running text, still big enough to tap. */
+.link-target {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+}
+
 /* Pills */
 .pill {
   display: inline-flex;

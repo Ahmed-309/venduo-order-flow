@@ -75,7 +75,9 @@ function StyleGrid({ catalogue, draftCount }: { catalogue: Catalogue; draftCount
       {draftCount > 0 ? (
         <p className="meta">
           You have {draftCount} {draftCount === 1 ? 'draft' : 'drafts'} in progress.{' '}
-          <GuardedLink href="/orders">Continue in My orders</GuardedLink>
+          <GuardedLink className="link-target" href="/orders">
+            Continue in My orders
+          </GuardedLink>
         </p>
       ) : null}
       {hasFailed ? (

@@ -67,7 +67,7 @@ test('starting a draft can fail and be retried', async ({ page }) => {
 async function checkLayout(page: Page) {
   const report = await page.evaluate(() => {
     const overflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;
-    const small = [...document.querySelectorAll<HTMLElement>('button, a.btn, a.nav-link, select, input:not(.visually-hidden), textarea, .choice-pill')]
+    const small = [...document.querySelectorAll<HTMLElement>('button, a, select, input:not(.visually-hidden), textarea, .choice-pill')]
       .filter((element) => {
         const box = element.getBoundingClientRect();
         return box.width > 0 && box.height > 0 && !element.closest('[hidden]') && box.height < 44 && element.getAttribute('type') !== 'checkbox';
@@ -91,6 +91,11 @@ test('every screen fits, with big enough targets, at this viewport', async ({ pa
   await loadFixture(page, 'Populated');
   await expect(page.getByRole('link', { name: /Everyday tee/ })).toBeVisible();
   await checkLayout(page);
+
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Continue in My orders' })).toBeVisible();
+  await checkLayout(page);
+  await page.goto('/orders');
 
   await page.getByRole('link', { name: /Harbour crewneck/ }).click();
   await page.waitForURL(/\/tech-packs\//);
