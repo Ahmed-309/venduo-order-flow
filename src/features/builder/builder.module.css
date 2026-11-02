@@ -160,9 +160,15 @@
   text-align: center;
 }
 
+/* Narrower on phones, so the default base column starts fully on screen. */
 @media (max-width: 767px) {
   .cellInput {
+    width: 56px;
     font-size: 16px;
+  }
+
+  .sizeTable tbody th {
+    white-space: normal;
   }
 }
 

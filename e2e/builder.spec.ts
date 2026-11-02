@@ -364,3 +364,24 @@ test('the rail shows the price and the MOQ reason without scrolling', async ({ p
   await expect(rail.getByText(/^MOQ|minimum/i).first()).toBeInViewport({ ratio: 1 });
   await expect(rail.getByRole('button', { name: 'Request a quote' })).toBeInViewport({ ratio: 1 });
 });
+
+test('a bad measurement says what is wrong, and the message clears', async ({ page }) => {
+  await startDraft(page, 'T-shirt');
+  await pickFit(page);
+  const cell = page.getByLabel('Chest width, size M, in centimetres');
+  await cell.fill('abc');
+  await expect(page.locator('#measurement-error')).toContainText('Chest width, size M: use a number above 0, up to 300 cm.');
+  await expect(cell).toHaveAttribute('aria-describedby', 'measurement-error');
+  await cell.blur();
+  await expect(page.getByText('use a number above 0')).toHaveCount(0);
+});
+
+test('the base size column starts fully on screen', async ({ page }) => {
+  await startDraft(page, 'T-shirt');
+  await pickFit(page);
+  const positions = await page.getByLabel('Chest width, size M, in centimetres').evaluate((cell) => ({
+    cell: cell.getBoundingClientRect().right,
+    scroller: cell.closest('[role=region]')!.getBoundingClientRect().right,
+  }));
+  expect(positions.cell).toBeLessThanOrEqual(positions.scroller);
+});

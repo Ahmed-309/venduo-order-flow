@@ -15,6 +15,7 @@ import styles from '../builder.module.css';
 import type { SectionProps } from './types';
 
 const MAX_CM = 300;
+const CELL_ERROR_ID = 'measurement-error';
 
 function parseCm(text: string): number | null {
   const value = Number(text);
@@ -108,6 +109,7 @@ interface SizeTableProps {
 }
 
 function SizeTable({ measurements, category, readOnly, onChange }: SizeTableProps) {
+  const [invalidCell, setInvalidCell] = useState<string | null>(null);
   const overrides = category.points.flatMap((point) =>
     (measurements.overrides[point.id] ?? []).map((size) => ({ point, size })),
   );
@@ -153,12 +155,13 @@ function SizeTable({ measurements, category, readOnly, onChange }: SizeTableProp
                 {SIZES.map((size) => (
                   <td key={size}>
                     <MeasurementCell
-                      label={`${point.label}, size ${size}, in centimetres`}
+                      name={`${point.label}, size ${size}`}
                       value={measurements.values[point.id][size]}
                       isBase={size === measurements.baseSize}
                       isOverridden={(measurements.overrides[point.id] ?? []).includes(size)}
                       readOnly={readOnly}
                       onCommit={(value) => onChange(setMeasurement(measurements, category, point.id, size, value), true)}
+                      onInvalidChange={setInvalidCell}
                     />
                   </td>
                 ))}
@@ -167,6 +170,12 @@ function SizeTable({ measurements, category, readOnly, onChange }: SizeTableProp
           </tbody>
         </table>
       </div>
+
+      {invalidCell ? (
+        <p id={CELL_ERROR_ID} className="field-error" role="alert">
+          {invalidCell}: use a number above 0, up to {MAX_CM} cm. Your last valid value is still saved.
+        </p>
+      ) : null}
 
       {overrides.length > 0 ? (
         <div className="stack-4">
@@ -198,15 +207,16 @@ function SizeTable({ measurements, category, readOnly, onChange }: SizeTableProp
 }
 
 interface MeasurementCellProps {
-  label: string;
+  name: string;
   value: number;
   isBase: boolean;
   isOverridden: boolean;
   readOnly: boolean;
   onCommit: (value: number) => void;
+  onInvalidChange: (name: string | null) => void;
 }
 
-function MeasurementCell({ label, value, isBase, isOverridden, readOnly, onCommit }: MeasurementCellProps) {
+function MeasurementCell({ name, value, isBase, isOverridden, readOnly, onCommit, onInvalidChange }: MeasurementCellProps) {
   // While the field has focus, its text may be mid-edit ("5", "52.") or not yet valid.
   const [text, setText] = useState<string | null>(null);
   const isInvalid = text !== null && parseCm(text) === null;
@@ -217,17 +227,21 @@ function MeasurementCell({ label, value, isBase, isOverridden, readOnly, onCommi
     <input
       className={classes.join(' ')}
       inputMode="decimal"
-      aria-label={label}
+      aria-label={`${name}, in centimetres`}
       aria-invalid={isInvalid}
-      title={isInvalid ? `Use a number between 0 and ${MAX_CM}` : undefined}
+      aria-describedby={isInvalid ? CELL_ERROR_ID : undefined}
       value={text ?? String(value)}
       disabled={readOnly}
       onChange={(event) => {
         setText(event.target.value);
         const parsed = parseCm(event.target.value);
+        onInvalidChange(parsed === null ? name : null);
         if (parsed !== null) onCommit(parsed);
       }}
-      onBlur={() => setText(null)}
+      onBlur={() => {
+        setText(null);
+        onInvalidChange(null);
+      }}
     />
   );
 }
