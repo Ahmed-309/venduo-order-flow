@@ -6,5 +6,5 @@ export interface SectionProps {
   catalogue: Catalogue;
   category: Category;
   readOnly: boolean;
-  onChange: (next: TechPack, options?: { debounce?: boolean }) => void;
+  onChange: (update: TechPack | ((current: TechPack) => TechPack), options?: { debounce?: boolean }) => void;
 }

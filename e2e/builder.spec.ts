@@ -332,3 +332,27 @@ test('a quote draft typed just before a reload is not lost', async ({ page }) =>
   await page.reload();
   await expect(page.getByLabel(/Comment/)).toHaveValue('Typed just before reload');
 });
+
+test('an edit made during a slow upload survives the upload finishing', async ({ page }) => {
+  await startDraft(page, 'T-shirt');
+  await setFaults(page, { delayMs: 800 });
+  const section = await openSection(page, 'mockups');
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  await section
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles({ name: 'front.png', mimeType: 'image/png', buffer: png });
+  await page.getByLabel('Name').fill('Edited during upload');
+
+  await expect(section.getByText('Front: front.png')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByLabel('Name')).toHaveValue('Edited during upload');
+
+  await setFaults(page, {});
+  await waitForSaved(page);
+  await page.reload();
+  await expect(page.getByLabel('Name')).toHaveValue('Edited during upload');
+  await expect((await openSection(page, 'mockups')).getByText('Front: front.png')).toBeVisible();
+});

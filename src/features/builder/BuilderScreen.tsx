@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { loadBuilder, saveTechPack, stashTechPack } from '@/application/techPacks';
 import { findCategory, type Catalogue } from '@/domain/catalogue/types';
 import { estimatePrice } from '@/domain/pricing';
@@ -65,6 +65,7 @@ function Builder({ initialPack, catalogue }: { initialPack: TechPack; catalogue:
   const env = useServices();
   const router = useRouter();
   const [pack, setPack] = useState(initialPack);
+  const latestPack = useRef(initialPack);
   const [openSections, setOpenSections] = useState<Set<SectionId>>(() => new Set<SectionId>(['details']));
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -80,7 +81,10 @@ function Builder({ initialPack, catalogue }: { initialPack: TechPack; catalogue:
   const category = findCategory(catalogue, pack.categoryId);
   const readOnly = isFrozen(pack);
 
-  function change(next: TechPack, options: ChangeOptions = {}) {
+  /** Work that finishes later, like an upload, passes a function so it builds on the latest edits. */
+  function change(update: TechPack | ((current: TechPack) => TechPack), options: ChangeOptions = {}) {
+    const next = typeof update === 'function' ? update(latestPack.current) : update;
+    latestPack.current = next;
     setPack(next);
     autosave.push(next, { debounce: options.debounce ?? false });
   }

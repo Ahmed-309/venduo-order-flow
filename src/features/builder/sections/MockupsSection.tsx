@@ -25,10 +25,10 @@ export function MockupsSection({ pack, category, readOnly, onChange }: SectionPr
     setUploading(side);
     try {
       const assetId = await repository.saveAsset(file);
-      onChange({
-        ...pack,
-        mockups: { ...pack.mockups, [side]: { source: 'upload', assetId, fileName: file.name } },
-      });
+      onChange((current) => ({
+        ...current,
+        mockups: { ...current.mockups, [side]: { source: 'upload', assetId, fileName: file.name } },
+      }));
     } catch {
       setErrors((current) => ({ ...current, [side]: "We couldn't store that image. Try again." }));
     } finally {
