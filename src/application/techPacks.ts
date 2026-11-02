@@ -1,6 +1,7 @@
 import { findCategory, type Catalogue } from '@/domain/catalogue/types';
+import type { PriceEstimate } from '@/domain/pricing';
 import type { QuoteRequest } from '@/domain/quote';
-import { createTechPack, type TechPack } from '@/domain/techPack';
+import { createTechPack, isFrozen, type TechPack } from '@/domain/techPack';
 import type { TechPackRepository } from './repository';
 
 /** The outside world a workflow needs, passed in so tests can control it. */
@@ -30,11 +31,17 @@ export function stashTechPack(env: WorkflowEnv, pack: TechPack): void {
 export interface BuilderData {
   catalogue: Catalogue;
   pack: TechPack | null;
+  /** For a sent pack, the estimate it was sent with. Later catalogue changes must not alter it. */
+  sentEstimate: PriceEstimate | null;
 }
 
 export async function loadBuilder(env: WorkflowEnv, packId: string): Promise<BuilderData> {
   const [catalogue, pack] = await Promise.all([env.repository.loadCatalogue(), env.repository.getPack(packId)]);
-  return { catalogue, pack };
+  if (!pack || !isFrozen(pack)) return { catalogue, pack, sentEstimate: null };
+
+  const requests = await env.repository.listRequests();
+  const sent = requests.flatMap((request) => request.items).find((item) => item.pack.id === pack.id);
+  return { catalogue, pack, sentEstimate: sent?.estimate ?? null };
 }
 
 export interface OrdersData {

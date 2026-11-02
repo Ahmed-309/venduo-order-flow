@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { loadBuilder, saveTechPack, stashTechPack } from '@/application/techPacks';
 import { findCategory, type Catalogue } from '@/domain/catalogue/types';
-import { estimatePrice } from '@/domain/pricing';
+import { estimatePrice, type PriceEstimate } from '@/domain/pricing';
 import { evaluateReadiness } from '@/domain/readiness';
 import { clearSection, displayName, isFrozen, SECTION_IDS, SECTION_TITLES, type SectionId, type TechPack } from '@/domain/techPack';
 import { useNavigationGuard } from '@/features/shared/NavigationGuard';
@@ -35,7 +35,14 @@ export function BuilderScreen({ packId }: { packId: string }) {
       </EmptyState>
     );
   }
-  return <Builder key={resource.data.pack.id} initialPack={resource.data.pack} catalogue={resource.data.catalogue} />;
+  return (
+    <Builder
+      key={resource.data.pack.id}
+      initialPack={resource.data.pack}
+      catalogue={resource.data.catalogue}
+      sentEstimate={resource.data.sentEstimate}
+    />
+  );
 }
 
 function BuilderSkeleton() {
@@ -61,7 +68,13 @@ export interface ChangeOptions {
   debounce?: boolean;
 }
 
-function Builder({ initialPack, catalogue }: { initialPack: TechPack; catalogue: Catalogue }) {
+interface BuilderProps {
+  initialPack: TechPack;
+  catalogue: Catalogue;
+  sentEstimate: PriceEstimate | null;
+}
+
+function Builder({ initialPack, catalogue, sentEstimate }: BuilderProps) {
   const env = useServices();
   const router = useRouter();
   const [pack, setPack] = useState(initialPack);
@@ -77,7 +90,10 @@ function Builder({ initialPack, catalogue }: { initialPack: TechPack; catalogue:
   useNavigationGuard(autosave.flush);
 
   const readiness = useMemo(() => evaluateReadiness(pack, catalogue), [pack, catalogue]);
-  const estimate = useMemo(() => estimatePrice(pack, pack.estimateQuantity, catalogue), [pack, catalogue]);
+  const estimate = useMemo(
+    () => sentEstimate ?? estimatePrice(pack, pack.estimateQuantity, catalogue),
+    [sentEstimate, pack, catalogue],
+  );
   const category = findCategory(catalogue, pack.categoryId);
   const readOnly = isFrozen(pack);
 
