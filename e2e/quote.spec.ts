@@ -186,8 +186,7 @@ test('retrying after a lost response returns the same request, with no duplicate
   await expect(page.getByText('Reference QR-0002')).toBeVisible();
 
   await page.getByRole('link', { name: 'Go to My orders' }).click();
-  const requests = page.getByRole('region', { name: 'Quote requests' });
-  await expect(requests.getByRole('listitem')).toHaveCount(2);
+  await expect(page.getByRole('link', { name: /QR-\d+/ })).toHaveCount(2);
 });
 
 test('a repeated click cannot send twice', async ({ page }) => {

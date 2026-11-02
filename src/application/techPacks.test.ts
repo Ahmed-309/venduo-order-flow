@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { completeTShirt, emptyPack } from '@/domain/testing/builders';
 import { MemoryRepository } from '@/infrastructure/memoryRepository';
 import { loadQuoteWizard, submitQuote } from './quotes';
-import { loadBuilder, type WorkflowEnv } from './techPacks';
+import { loadBuilder, loadOrders, type WorkflowEnv } from './techPacks';
 
 const delivery = { recipientName: 'Salma', mobile: '01012345678', governorate: 'Giza', city: 'Dokki', street: '' };
 
@@ -18,6 +18,17 @@ async function setup() {
   if (result.kind !== 'submitted') throw new Error('Expected the quote to submit');
   return { env, request: result.request };
 }
+
+describe('loadOrders', () => {
+  it('lists drafts and requests together, newest first, with a sent pack only inside its request', async () => {
+    const { env, request } = await setup();
+    const { entries } = await loadOrders(env);
+    expect(entries.map((entry) => (entry.kind === 'draft' ? entry.pack.id : entry.request.id))).toEqual([
+      'draft',
+      request.id,
+    ]);
+  });
+});
 
 describe('loadBuilder', () => {
   it('returns the estimate a sent pack went out with', async () => {

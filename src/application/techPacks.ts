@@ -44,11 +44,17 @@ export async function loadBuilder(env: WorkflowEnv, packId: string): Promise<Bui
   return { catalogue, pack, sentEstimate: sent?.estimate ?? null };
 }
 
+/** One row of My orders: a pack still being worked on, or a request that was sent. */
+export type OrderEntry = { kind: 'draft'; pack: TechPack } | { kind: 'request'; request: QuoteRequest };
+
 export interface OrdersData {
   catalogue: Catalogue;
   packs: TechPack[];
-  requests: QuoteRequest[];
+  /** Newest first. A sent pack appears only inside its request. */
+  entries: OrderEntry[];
 }
+
+const entryDate = (entry: OrderEntry) => (entry.kind === 'draft' ? entry.pack.updatedAt : entry.request.submittedAt);
 
 export async function loadOrders(env: WorkflowEnv): Promise<OrdersData> {
   const [catalogue, packs, requests] = await Promise.all([
@@ -56,9 +62,13 @@ export async function loadOrders(env: WorkflowEnv): Promise<OrdersData> {
     env.repository.listPacks(),
     env.repository.listRequests(),
   ]);
+  const entries: OrderEntry[] = [
+    ...packs.filter((pack) => !isFrozen(pack)).map((pack) => ({ kind: 'draft' as const, pack })),
+    ...requests.map((request) => ({ kind: 'request' as const, request })),
+  ];
   return {
     catalogue,
-    packs: [...packs].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
-    requests: [...requests].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)),
+    packs,
+    entries: entries.sort((a, b) => entryDate(b).localeCompare(entryDate(a))),
   };
 }

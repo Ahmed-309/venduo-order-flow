@@ -11,16 +11,16 @@ test('My orders: empty', async ({ page }) => {
 test('My orders: partial tells you what is next', async ({ page }) => {
   await loadFixture(page, 'Partial');
   await expect(page.getByRole('link', { name: /Campus hoodie/ })).toContainText('Next: Add at least one body fabric.');
-  await expect(page.getByText('Nothing sent yet.')).toBeVisible();
 });
 
-test('My orders: populated shows every record with its status', async ({ page }) => {
+test('My orders: drafts and sent quotes share one list, and nothing appears twice', async ({ page }) => {
   await loadFixture(page, 'Populated');
-  const packs = page.getByRole('region', { name: 'Tech packs' });
-  await expect(packs.getByRole('listitem')).toHaveCount(4);
-  await expect(packs.getByText('Draft')).toHaveCount(3);
-  await expect(packs.getByText('Quote requested')).toHaveCount(1);
-  await expect(page.getByRole('region', { name: 'Quote requests' }).getByText('QR-0001')).toBeVisible();
+  const list = page.getByRole('list', { name: 'Tech packs and quote requests' });
+  await expect(list.getByRole('listitem')).toHaveCount(4);
+  await expect(list.getByText('Draft')).toHaveCount(3);
+  await expect(list.getByText('Quote requested')).toHaveCount(1);
+  await expect(list.getByRole('link', { name: /QR-0001/ })).toBeVisible();
+  await expect(page.getByRole('list')).toHaveCount(1);
 });
 
 test('loading shows skeletons, then the content', async ({ page }) => {
@@ -113,7 +113,7 @@ test('every screen fits, with big enough targets, at this viewport', async ({ pa
   await checkLayout(page);
 
   await page.goto('/orders');
-  await page.getByRole('region', { name: 'Quote requests' }).getByRole('link').click();
+  await page.getByRole('link', { name: /QR-0001/ }).click();
   await page.waitForURL(/confirmation/);
   await expect(page.getByText('What happens next')).toBeVisible();
   await checkLayout(page);

@@ -81,6 +81,9 @@ function Confirmation({ request, catalogue }: { request: QuoteRequest; catalogue
                     {formatEgpRange(item.estimate.unit)} / unit · {item.estimate.leadTimeWeeks} weeks
                   </p>
                   {item.comment ? <p className="meta">Comment: {item.comment}</p> : null}
+                  <GuardedLink className="link-target" href={`/tech-packs/${item.pack.id}`}>
+                    View tech pack<span className="visually-hidden"> {name}</span>
+                  </GuardedLink>
                 </div>
               </li>
             );

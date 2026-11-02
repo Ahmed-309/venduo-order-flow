@@ -32,13 +32,14 @@ test('create, complete, submit, confirm, find in My orders, reopen read-only', a
   await page.getByRole('link', { name: 'Go to My orders' }).click();
   await page.waitForURL(/\/orders/);
 
-  const packs = page.getByRole('region', { name: 'Tech packs' });
-  await expect(packs.getByText('Quote requested')).toBeVisible();
-  const requests = page.getByRole('region', { name: 'Quote requests' });
-  await expect(requests.getByText('QR-0001')).toBeVisible();
-  await expect(requests.getByText('Quote requested')).toBeVisible();
+  const sent = page.getByRole('link', { name: /QR-0001/ });
+  await expect(sent).toContainText('Quote requested');
+  await expect(sent).toContainText('Everyday tee');
+  await expect(page.getByText('Everyday tee')).toHaveCount(1);
 
-  await packs.getByRole('link', { name: /Everyday tee/ }).click();
+  await sent.click();
+  await page.waitForURL(/confirmation/);
+  await page.getByRole('link', { name: /View tech pack/ }).click();
   await page.waitForURL(/\/tech-packs\//);
   await expect(page.getByText(/frozen and opens read-only/)).toBeVisible();
   await expect(page.getByLabel('Name')).toBeDisabled();
