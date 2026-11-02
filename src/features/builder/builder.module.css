@@ -39,6 +39,28 @@
   margin-bottom: 16px;
 }
 
+/* Section states */
+.stateIcon {
+  display: inline-flex;
+  flex: none;
+}
+
+.stateComplete {
+  color: var(--color-success);
+}
+
+.stateIncomplete {
+  color: var(--color-warning-text);
+}
+
+.stateOptional {
+  color: var(--color-text-secondary);
+}
+
+.emptyValue {
+  color: var(--color-text-tertiary);
+}
+
 /* Sections */
 .section {
   padding: 0;
@@ -285,7 +307,7 @@
 
 .railMessages {
   display: grid;
-  gap: 2px;
+  gap: 4px;
   padding-bottom: 8px;
 }
 
@@ -327,7 +349,7 @@
 
 .assumptions {
   display: grid;
-  gap: 2px;
+  gap: 4px;
 }
 
 /* However long the rail gets, the quote action stays reachable. */

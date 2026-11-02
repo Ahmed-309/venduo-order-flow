@@ -5,11 +5,28 @@ import type { SectionState } from '@/domain/readiness';
 import type { SectionId } from '@/domain/techPack';
 import styles from './builder.module.css';
 
-export const SECTION_STATE_PILLS: Record<SectionState, { label: string; className: string }> = {
-  complete: { label: 'Complete', className: 'pill-success' },
-  incomplete: { label: 'Incomplete', className: 'pill-warning' },
-  optional: { label: 'Optional', className: 'pill-neutral' },
+const SECTION_STATES: Record<SectionState, { label: string; className: string; icon: ReactNode }> = {
+  complete: { label: 'Complete', className: styles.stateComplete, icon: <path d="M3 8.5 6.5 12 13 4.5" /> },
+  incomplete: {
+    label: 'Incomplete',
+    className: styles.stateIncomplete,
+    icon: <circle cx="8" cy="8" r="6.5" strokeDasharray="3 2.1" />,
+  },
+  optional: { label: 'Optional', className: styles.stateOptional, icon: <path d="M3.5 8h9" /> },
 };
+
+/** Each state has its own shape, so colour never carries the meaning alone. */
+export function SectionStateIcon({ state }: { state: SectionState }) {
+  const { label, className, icon } = SECTION_STATES[state];
+  return (
+    <span className={`${styles.stateIcon} ${className}`}>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+        {icon}
+      </svg>
+      <span className="visually-hidden">{label}</span>
+    </span>
+  );
+}
 
 interface SectionShellProps {
   id: SectionId;
@@ -24,7 +41,6 @@ interface SectionShellProps {
 }
 
 export function SectionShell({ id, number, title, state, isOpen, readOnly, onToggle, onClear, children }: SectionShellProps) {
-  const pill = SECTION_STATE_PILLS[state];
   const panelId = `section-panel-${id}`;
 
   return (
@@ -42,7 +58,7 @@ export function SectionShell({ id, number, title, state, isOpen, readOnly, onTog
               {String(number).padStart(2, '0')}
             </span>
             <span className="section-title">{title}</span>
-            <span className={`pill ${pill.className}`}>{pill.label}</span>
+            <SectionStateIcon state={state} />
           </button>
         </h2>
         {readOnly ? null : <ClearMenu title={title} onClear={onClear} />}

@@ -6,7 +6,7 @@ import type { PriceEstimate } from '@/domain/pricing';
 import type { Readiness } from '@/domain/readiness';
 import { SECTION_TITLES, type SectionId, type TechPack } from '@/domain/techPack';
 import { Dialog } from '@/features/shared/Dialog';
-import { SECTION_STATE_PILLS } from './SectionShell';
+import { SectionStateIcon } from './SectionShell';
 import styles from './builder.module.css';
 
 interface RailProps {
@@ -53,12 +53,11 @@ function Completeness({ readiness, onGoToSection }: RailProps) {
       </div>
       <ul className={styles.railSections}>
         {readiness.sections.map((section) => {
-          const pill = SECTION_STATE_PILLS[section.state];
           return (
             <li key={section.id}>
               <button type="button" className={styles.railRow} onClick={() => onGoToSection(section.id)}>
                 <span>{SECTION_TITLES[section.id]}</span>
-                <span className={`pill ${pill.className}`}>{pill.label}</span>
+                <SectionStateIcon state={section.state} />
               </button>
               {section.messages.length > 0 ? (
                 <ul className={styles.railMessages}>
@@ -122,7 +121,18 @@ function Estimate({ pack, catalogue, estimate, readOnly, onQuantityChange }: Rai
         </div>
         <div>
           <dt className="meta">Hub</dt>
-          <dd>{pack.hubId ? hubName(catalogue, pack.hubId) : 'Not set yet'}</dd>
+          <dd>
+            {pack.hubId ? (
+              hubName(catalogue, pack.hubId)
+            ) : (
+              <>
+                <span className={styles.emptyValue} aria-hidden="true">
+                  —
+                </span>
+                <span className="visually-hidden">Not set yet</span>
+              </>
+            )}
+          </dd>
         </div>
       </dl>
 

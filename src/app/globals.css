@@ -261,7 +261,7 @@ textarea {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #3250cf;
+  background: color-mix(in srgb, var(--color-primary-strong) 88%, black);
 }
 
 .btn-secondary {
@@ -387,7 +387,7 @@ textarea.input {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 10px;
+  padding: 4px 8px;
   border-radius: var(--radius-full);
   font-size: 13px;
   line-height: 18px;
