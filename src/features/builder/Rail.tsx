@@ -25,8 +25,8 @@ interface RailProps {
 export function Rail(props: RailProps) {
   return (
     <div className="stack-16">
-      <Completeness {...props} />
       <Estimate {...props} />
+      <Completeness {...props} />
       {props.readOnly ? null : <QuoteAction {...props} />}
     </div>
   );

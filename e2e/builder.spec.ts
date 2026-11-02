@@ -356,3 +356,11 @@ test('an edit made during a slow upload survives the upload finishing', async ({
   await expect(page.getByLabel('Name')).toHaveValue('Edited during upload');
   await expect((await openSection(page, 'mockups')).getByText('Front: front.png')).toBeVisible();
 });
+
+test('the rail shows the price and the MOQ reason without scrolling', async ({ page }) => {
+  test.skip(isPhone(page), 'The phone rail is a sheet.');
+  await startDraft(page, 'T-shirt');
+  const rail = await openRail(page);
+  await expect(rail.getByText(/^MOQ|minimum/i).first()).toBeInViewport({ ratio: 1 });
+  await expect(rail.getByRole('button', { name: 'Request a quote' })).toBeInViewport({ ratio: 1 });
+});

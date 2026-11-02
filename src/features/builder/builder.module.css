@@ -29,7 +29,8 @@
     display: block;
     position: sticky;
     top: 16px;
-    max-height: calc(100dvh - 32px);
+    /* Short enough to fit below the header and title, so the quote action shows before any scrolling. */
+    max-height: calc(100dvh - 164px);
     overflow-y: auto;
   }
 }
