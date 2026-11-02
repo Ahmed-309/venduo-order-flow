@@ -34,13 +34,13 @@ src/
   app/             Next.js routes, kept to one line of real work each
 ```
 
-Dependencies point one way: `features → application → domain`. `infrastructure` implements the contract from `application`. ESLint enforces this (`eslint.config.mjs`), so breaking the direction fails `npm run lint`.
+Dependencies point one way: `features → application → domain`. `infrastructure` implements the contract from `application`. ESLint enforces this (`eslint.config.mjs`), whether an import uses the `@/` alias or a relative path, and it also bans browser globals from `domain` and `application`. `src/architecture.test.ts` feeds it violations to prove the rules fire.
 
 | Brief requirement | How it holds |
 |---|---|
 | **8.1** Rules testable without UI, browser or storage | `src/domain` imports none of them, and lint forbids it. Its tests run in plain Node. |
-| **8.2** Storage replaceable without touching rules or screens | Screens and workflows see only `TechPackRepository`. One line in `infrastructure/container.ts` picks the implementation. `repository.contract.test.ts` runs the same tests against IndexedDB and an in-memory repository. |
-| **8.3** New garment type is a data change | A category in `seed.ts` holds its fits, points, costs, MOQ and readiness rules. A test adds a new garment using only data and runs it through readiness and pricing. Add two sketch files to `public/sketches` as well. |
+| **8.2** Storage replaceable without touching rules or screens | Screens and workflows see only `TechPackRepository`. `infrastructure/container.ts` picks the implementation. The Demo panel's fixture loader is the one piece tied to IndexedDB. `repository.contract.test.ts` runs the same tests against IndexedDB and an in-memory repository. |
+| **8.3** New garment type is a data change | A category in `seed.ts` holds its fits, points, costs, MOQ and readiness rules. A test adds a new garment using only data and runs it through readiness and pricing. Add two sketch files to `public/sketches` as well. The seed is a TypeScript file today, so a new garment still needs a deploy. |
 | **8.4** Real loading and failure states, on demand | `faultInjectingRepository.ts` wraps the real repository and delays or rejects operations. Screens receive ordinary rejected promises and contain no demo logic. |
 | **8.5** Find any rule in under a minute | See the table below. |
 
@@ -55,9 +55,10 @@ Dependencies point one way: `features → application → domain`. `infrastructu
 | Hub lock, what fabrics and trims show | `domain/hub.ts` |
 | Grading and overrides | `domain/grading.ts` |
 | Phone, quantity, delivery, what can be sent | `domain/quote.ts` |
-| Name length, upload limits, Pantone format, clear section | `domain/techPack.ts` |
+| Description length, upload limits, Pantone format, clear section | `domain/techPack.ts` |
 | Idempotent submission | `application/quotes.ts`, `commitQuoteRequest` in `infrastructure/indexedDbRepository.ts` |
 | Autosave, debounce, retry | `application/autosaveQueue.ts` |
+| Edits caught during page unload | `stashUnsaved` in `infrastructure/indexedDbRepository.ts` |
 | Colours, type, radius | `app/globals.css` |
 
 ## Data model
@@ -102,10 +103,16 @@ Worked example, a Regular T-shirt in Cotton jersey at Cairo, 100 units: `0.2 kg 
 - **Changing the base size changes no numbers.** Cell values are stored, not derived, so nothing visibly jumps. Later base edits regrade from the new base and skip hand-set cells. If the new base cell was set by hand, its value becomes the anchor. Each hand-set cell has a reset.
 - **Picking a different fit replaces the measurements.** If the brand has edited them, a dialog asks first.
 - **Each placement takes one fabric.** To change one, remove it and pick again.
+- **Placements depend on the garment.** A hoodie has no collar, and trousers and shorts offer body and lining only. The brief lists four placements; offering one that a garment does not have would only produce an impossible pack.
 - **Default sketches satisfy the mockup requirement**, and are labelled as defaults. The brief says they are pre-filled and "either can be replaced".
 - **Quantities are per product, in total, from the MOQ up to 5,000** (the slider's ceiling). Allocation by size is left out; the brief asks only for a quantity per product.
+- **The per-product comment is optional.** The brief lists it alongside quantity, but a factory can quote a complete tech pack without one, and forcing a comment invites filler.
 - **Delivery requires recipient, mobile, governorate and city.** The street is optional. The brief says "address"; I judged governorate and city enough to quote on.
 - **Mobile numbers** must begin 010, 011, 012 or 015 with 11 digits. `+20` and `0020` prefixes are accepted and normalized.
+- **My orders is one list, newest first.** A row is either a draft or a sent request. A sent pack appears only inside its request, and opens read-only from the confirmation screen.
+- **A sent pack shows the estimate it was sent with**, not one recalculated from today's catalogue.
+- **Edits survive an immediate reload.** IndexedDB cannot finish a read-then-write while a page unloads, and removing the read would bypass the frozen check. So on `pagehide` any unsaved edit goes to `localStorage`, and the next load applies it through the same rules: never over a sent pack or a newer save.
+- **Inputs use 16px text on phones**, not the 14px body size, because iOS Safari zooms the page when a smaller input takes focus.
 - **A sent pack is frozen by the storage write itself**, not only hidden by the UI, so another tab cannot change it.
 - **Submission is idempotent.** The submission id is stored before sending. A retry looks for an existing request *before* validating, because after a lost response the packs are already frozen and validation would wrongly refuse it. Creating the request, freezing packs and clearing the draft happen in one IndexedDB transaction.
 - **Quote received and Sampling** are real statuses with their own pills, but nothing can reach them yet.
