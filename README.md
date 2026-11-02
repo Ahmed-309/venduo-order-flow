@@ -2,7 +2,7 @@
 
 A brand picks a garment, specs it from a priced catalogue, watches a live estimate, and sends complete tech packs out for a quote. There are five screens: choose a style, build the tech pack, request a quote, confirmation, My orders.
 
-**Deployed:** _add the link here_
+**Deployed:**(https://venduo-order-flow-mu.vercel.app/)
 
 ## Run it
 
